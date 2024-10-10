@@ -21,6 +21,7 @@ import RecipeDetails from "./pages/RecipeDetails";
 import SignUpForm from "./pages/SignUpForm";
 import SearchScreen from "./pages/SearchScreen";
 import IngredientDetailsScreen from "./pages/IngredientDetailsScreen";
+import CategoryRecipesScreen from "./pages/CategoryRecipesScreen";
 import SearchByImage from "./pages/SearchByImage";
 import axios from "axios";
 import { Buffer } from "buffer";
@@ -226,6 +227,7 @@ export default function App() {
           options={{ title: "Ingredient Details" }}
         />
         <Stack.Screen name="SearchByImage" component={SearchByImage} />
+        <Stack.Screen name="CategoryRecipesScreen" component={CategoryRecipesScreen} />
         <Stack.Screen name="LoginForm" component={LoginForm} />
         <Stack.Screen name="SignUp" component={SignUpForm} />
       </Stack.Navigator>
