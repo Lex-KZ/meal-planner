@@ -126,9 +126,8 @@ function UserAccountScreen({ navigation }) {
               ).toString()
             );
           const payload = JSON.parse(parts[1]);
-          const userId = payload.username.id;
+          const userId = payload.id;
           const response = await api.get(`/user/${userId}`);
-
           const user = response.data.user;
           setUserName(user.first_name + " " + user.last_name);
           setFavorites(response.data.favorites);
@@ -227,7 +226,10 @@ export default function App() {
           options={{ title: "Ingredient Details" }}
         />
         <Stack.Screen name="SearchByImage" component={SearchByImage} />
-        <Stack.Screen name="CategoryRecipesScreen" component={CategoryRecipesScreen} />
+        <Stack.Screen
+          name="CategoryRecipesScreen"
+          component={CategoryRecipesScreen}
+        />
         <Stack.Screen name="LoginForm" component={LoginForm} />
         <Stack.Screen name="SignUp" component={SignUpForm} />
       </Stack.Navigator>

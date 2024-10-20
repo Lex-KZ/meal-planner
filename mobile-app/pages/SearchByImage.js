@@ -65,7 +65,8 @@ export default function SearchByImage({ navigation }) {
       );
 
       navigation.navigate("IngredientDetailsScreen", {
-        ingredientName: response.data.outputs[0].data.concepts[0].name.toUpperCase(),
+        ingredientName:
+          response.data.outputs[0].data.concepts[0].name.toUpperCase(),
       });
     };
     if (submitting) {

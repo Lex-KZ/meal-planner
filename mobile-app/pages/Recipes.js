@@ -100,7 +100,7 @@ export default function Recipes({ navigation }) {
             </Card>
           ))
         ) : (
-          <Text>No recipes found</Text>
+          <Text> </Text>
         )}
       </ScrollView>
 

@@ -7,6 +7,7 @@ const bodyParser = require("body-parser");
 
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
+const crypto = require("crypto");
 
 app.use(cors()); // To allow cross-origin requests
 
@@ -32,19 +33,41 @@ function generateAccessToken(username, id) {
   });
 }
 
-async function sha256(message) {
-  // encode as UTF-8
-  const msgBuffer = new TextEncoder().encode(message);                    
+function encrypt(plainText, password) {
+  try {
+    const iv = crypto.randomBytes(16);
+    const key = crypto
+      .createHash("sha256")
+      .update(password)
+      .digest("base64")
+      .substr(0, 32);
+    const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
+    let encrypted = cipher.update(plainText);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return iv.toString("hex") + ":" + encrypted.toString("hex");
+  } catch (error) {
+    console.log(error);
+  }
+}
 
-  // hash the message
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+function decrypt(encryptedText, password) {
+  try {
+    const textParts = encryptedText.split(":");
+    const iv = Buffer.from(textParts.shift(), "hex");
+    const encryptedData = Buffer.from(textParts.join(":"), "hex");
+    const key = crypto
+      .createHash("sha256")
+      .update(password)
+      .digest("base64")
+      .substr(0, 32);
+    const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
 
-  // convert ArrayBuffer to Array
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-
-  // convert bytes to hex string                  
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+    const decrypted = decipher.update(encryptedData);
+    const decryptedText = Buffer.concat([decrypted, decipher.final()]);
+    return decryptedText.toString();
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 // Function to get a specific recipe by ID along with its ingredients
@@ -196,7 +219,6 @@ function getIngredientDetailsByNameWithRecipes(ingredientName, res) {
   });
 }
 
-
 // Function to get all diet categories
 function getDietCategories(res) {
   const query = `SELECT DISTINCT category_diet FROM recipes;`; // Fetch distinct diet categories
@@ -205,7 +227,7 @@ function getDietCategories(res) {
     console.log({ results });
 
     if (results.length > 0) {
-      res.send(results.map(row => row.category_diet)); // Return only the category names
+      res.send(results.map((row) => row.category_diet)); // Return only the category names
     } else {
       res.send({ response: "No diet categories found" });
     }
@@ -214,7 +236,7 @@ function getDietCategories(res) {
 
 // Function to fetch recipes by diet category
 function getRecipesByDietCategory(category, res) {
-  if (typeof category !== 'string' || category.trim() === '') {
+  if (typeof category !== "string" || category.trim() === "") {
     return res.status(400).send({ response: "Invalid category" });
   }
 
@@ -237,23 +259,25 @@ function getRecipesByDietCategory(category, res) {
   });
 }
 
-
-
-
 function login(email, password, res) {
   const query = `SELECT * FROM users WHERE email='${email}'`;
   DB.submitBasicQuery(query, (results) => {
-    if (results.length === 1 && results[0].password === password) {
-      const token = generateAccessToken({ email, id: results[0].id });
-      res.send({
-        response: "Success",
-        email: results[0].email,
-        id: results[0].id,
-        firstName: results[0].first_name,
-        lastName: results[0].last_name,
-        token,
-      });
-      return;
+    if (results.length === 1) {
+      const passwordsMatch =
+        decrypt(results[0].password, process.env.ENCRYPTION_SECRET) ===
+        password;
+      if (passwordsMatch) {
+        const token = generateAccessToken(email, results[0].id);
+        res.send({
+          response: "Success",
+          email: results[0].email,
+          id: results[0].id,
+          firstName: results[0].first_name,
+          lastName: results[0].last_name,
+          token,
+        });
+        return;
+      }
     }
 
     res.send({ response: "Incorrect email or password" });
@@ -268,7 +292,7 @@ function createUser(email, firstName, lastName, password, res) {
       res.send({ response: "Could not create user." });
       return;
     }
-    const encryptedPassword = await sha256(password)
+    const encryptedPassword = encrypt(password, process.env.ENCRYPTION_SECRET);
     const insertQuery = `
       INSERT INTO users (email, first_name, last_name, password) 
       VALUES ('${email}', '${firstName}', '${lastName}', '${encryptedPassword}')
@@ -276,7 +300,7 @@ function createUser(email, firstName, lastName, password, res) {
 
     DB.submitBasicQuery(insertQuery, (results) => {
       if (results) {
-        const token = generateAccessToken(email, results.id);
+        const token = generateAccessToken(email, results.insertId);
         res.send({
           response: "Success",
           email: results.email,
@@ -392,14 +416,11 @@ app.get("/categories/diet", (_req, res) => {
   getDietCategories(res);
 });
 
-
-
 // Define the route for getting recipes by diet category
-app.get('/recipes/diet/:category', (req, res) => {
+app.get("/recipes/diet/:category", (req, res) => {
   const category = req.params.category; // Get the category from the URL parameter
   getRecipesByDietCategory(category, res); // Call the function to fetch recipes
 });
-
 
 // New endpoint to get all ingredients
 app.get("/ingredients", (_req, res) => {
