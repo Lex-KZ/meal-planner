@@ -71,7 +71,7 @@ const IngredientDetailsScreen = ({ route, navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View horizontal={false} style={styles.container}>
       <Text style={styles.title}>{ingredient.name}</Text>
       <Image source={{ uri: ingredient.image }} style={styles.image} />
       <Text style={styles.nutritionText}>
@@ -82,6 +82,7 @@ const IngredientDetailsScreen = ({ route, navigation }) => {
       <FlatList
         data={recipes}
         keyExtractor={(recipe) => recipe.id.toString()}
+        horizontal={false}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
@@ -93,7 +94,7 @@ const IngredientDetailsScreen = ({ route, navigation }) => {
           </TouchableOpacity>
         )}
       />
-    </ScrollView>
+    </View>
   );
 };
 
